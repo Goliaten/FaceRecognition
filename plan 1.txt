@@ -1,0 +1,15 @@
+Do rozpoznania twarzy osoby na zdjęciu myślę, że trzeba wykorzystać 2 sieci neuronowe.
+Jedna, która rozpoznaje ogólnie twarze na obrazie
+Druga, która przypasowuje twarz do danej osoby
+
+Model pierwszej sieci krąży po sieci. OpenCV wraz z Haar Cascade Classifier pozwala z grubsza określić lokalizację twarzy na zdjęciu.
+
+Model drugiej trzeba będzie stworzyć.
+Od razu nasuwa się pytanie, czy będzie można dotrenować sieć, gdy pojawi się nierozpoznana twarz.
+
+Wpierw zbierz obrazy - treningowe i testowe. Osoby: lebron james, michael jordan, kobe bryant. 200 treningowych, 50 testowych na początek.
+Obrazy będzie trzeba obrobić. Albo skryptem wykorzystujące pierwszy model, albo ręcznie(lepiej skryptem).
+
+Przygotowywanie danych jest trudne, model od OpenCV jest mierny, będzie potrzebna ręczna obróbka niektórych obrazów, i zebranie jeszcze większej ilości obrazów.
+
+
