@@ -1,2 +1,0 @@
-model_checkpoint_path: "tr5.last.weights"
-all_model_checkpoint_paths: "tr5.last.weights"
