@@ -1,9 +1,0 @@
-13 faces found
-filename: biden.jpg, average:0.6250813053969005, [0.62508131]
-filename: biden2.jpg, average:0.639878459042819, [0.63987846]
-filename: Donald_Trump_official_portrait.jpg, average:0.45525773147130266, [0.45525773]
-filename: putin.jpg, average:0.6619614405877953, [0.66196144]
-filename: trump1.jpeg, average:0.7516777000792454, [0.7516777]
-filename: trump2.jpg, average:0.0, [0.]
-filename: trumpwoman.jpg, average:0.6159719743819719, [0.61597197]
-filename: trumpwoman2.jpg, average:0.8176499159204247, [0.81764992]

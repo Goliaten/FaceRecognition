@@ -60,13 +60,14 @@ def get_face(detector, filename, path, save_path):
         print(f"extracting faces from {filename}")
     
     for y, face in enumerate(faces):
+        filnam = filename.split(".")
         face_counter += 1
         #print(filename, y)
         #print("\r\n" + filename + "\r\n")
         img = Image.open(path + "\\" + filename)
         img = img.crop((face[0]-10, face[1]-10, face[0]+face[2]+10, face[1]+face[3]+10))
         #img = ImageOps.grayscale(img)
-        img.save(save_path + "\\" + filename)
+        img.save(save_path + "\\" + '.'.join(filnam[:-1]) + f"_{image_face_counter}.{filnam[-1]}")
         image_face_counter += 1
     print(f" extracted total of {image_face_counter} faces")
     

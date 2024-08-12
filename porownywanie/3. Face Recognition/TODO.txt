@@ -1,0 +1,1 @@
+add option to skip extraction, and process what already is in the folders
