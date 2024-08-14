@@ -1,4 +1,5 @@
 import os
+from shutil import copy2 as copyfile
 import traceback
 from pprint import pprint
 import cv2
@@ -9,6 +10,7 @@ from mediapipe.tasks.python import vision
 from PIL import Image, ImageOps
 from pathlib import Path
 import numpy as np
+from time import time_ns
 
 face_detector_model = "\\".join(os.getcwd().split("\\")[:-1]) + "\\blaze_face_short_range.tflite"
 BaseOptions = mp.tasks.BaseOptions
@@ -27,16 +29,20 @@ image_input_refference_directory = path_to_faces + "\\input_refference"
 image_processed_refference_directory = path_to_faces + "\\processed_refference"
 image_input_test_directory = path_to_faces + "\\input_test"
 image_processed_test_directory = path_to_faces + "\\processed_test"
+image_output = path_to_faces + "\\output"
 image_debug = path_to_faces + "\\debug"
-directory_paths = [image_input_refference_directory, image_processed_refference_directory, image_input_test_directory, image_processed_test_directory, image_debug]
+directory_paths = [image_input_refference_directory, image_processed_refference_directory, image_input_test_directory, image_processed_test_directory, image_debug, image_output]
 
 face_counter = 0
 crop_offset = 10
+comparison_cutoff = 0.5
 
 use_subdivisions = True
 subdivisions = [
     {'order': 1, 'type':'sparse'}, # this should be the default option
     {'order': 2, 'type':'sparse'},
+    {'order': 4, 'type':'dense'},
+    {'order': 6, 'type':'sparse'},
 #    {'order': 2, 'type':'dense'},
 ]
 
@@ -89,9 +95,9 @@ def divide_image(image, subdiv):
                         [b_width * x_count, b_height * y_count, sd_width, sd_height] # originX, originY, width, height
                     ])
         
-    return output
     #return list of subdivided images, with their offset in relation to original coordinates
     # preferably in [[image, offset], [image, offset]] format
+    return output
 
 def get_faces():
     with FaceDetector.create_from_options(options) as detector:
@@ -122,11 +128,7 @@ def get_face(detector, image, subdivision, path, save_path, filename):
     # dziel na podobrazy
     subimages = divide_image(image, subdivision)
     
-    #------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    
     #dla każdego podobrazu, wykryj twarze, zachowaj przesunięcia
-    # teraz dylemat: duża lista z wszystkimi twarzami, czy duża pętla for zawierająca wszystko pod tą linią
-    
     for subdiv_index, subimage in enumerate(subimages):
         
         #img = Image.fromarray(subimage[0].numpy_view())
@@ -154,9 +156,6 @@ def get_face(detector, image, subdivision, path, save_path, filename):
             img.save(save_path + "\\" + '.'.join(filnam[:-1]) + f"_subdiv{subdivision['order']}{subdivision['type'][0]}-{subdiv_index}_{image_face_counter}.{filnam[-1]}")
             image_face_counter += 1
         print(f" extracted total of {image_face_counter} faces")
-    #input("test stop 1")
-    
-    
 
 def encode_face(filename, path):
     #print(filename)
@@ -174,50 +173,92 @@ def compare(batch1, batch2):
 
 def compare_faces(file):
     
+    output = []
     refference = [encode_face(x, image_processed_refference_directory)[0] for x in os.listdir(image_processed_refference_directory)]
-    #refference = []
-    #for x in os.listdir(image_processed_refference_directory):
-    #    y = encode_face(x, image_processed_refference_directory)
-    #    if len(y) > 0:
-    #        refference.append(y[0])
     
     for test in os.listdir(image_processed_test_directory):
-        print()
         
         distance = compare(
             refference,
             encode_face(test, image_processed_test_directory)[0]
             #-------------------------------------------------
         )
-        print(f"filename: {test}, average:{sum(distance) / len(distance)}, {distance}")
-        file.write(f"filename: {test}, average:{sum(distance) / len(distance)}, {distance}\r\n")
+        output.append([test, avg:=sum(distance) / len(distance), distance])
+        #print(f"filename: {test}, average:{avg}, {distance}")
+        print(f"comparing: {test}")
+        file.write(f"filename: {test}, average:{avg}, {distance}\r\n")
+        
+    return output
 
-def make_clear_folders():
+def move_images_similar(comparisons, file):
+    
+    for comparison in comparisons:
+        
+        ext = comparison[0].split('.')[-1]
+        filename = comparison[0].split("_")[:-2]
+        filename = '_'.join(filename) + '.' + ext
+        print(f"copying: {filename}")
+        file.write(f"Copied: {filename}")
+    
+        #check if anything in the comparison list is smaller than comparison cutoff
+        if [1 for x in comparison[2] if x < comparison_cutoff]:
+            copyfile(image_input_test_directory + "\\" + filename, image_output + "\\" + filename)
+        
+    
+    
+    
+
+def make_folders():
     
     for x in directory_paths:
         Path(x).mkdir(parents=True, exist_ok=True)
+
+def clear_folders():
     
     for dirr in [image_processed_refference_directory, image_processed_test_directory, image_debug]:
         for x in os.listdir(dirr):
             os.remove(dirr + "\\" + x)
 
+def ask_get_faces():
+    
+    inp = input("\r\n" + "Skip extracting faces from files? (Write 'Yes' to skip): ")
+    
+    if inp in ['yes', 'Yes', "'Yes'", "'yes'", 'Y', 'y']:
+        return False
+    return True
+
 def main():
     
-    make_clear_folders()
-    print("created folders and cleaned processed")
-    get_faces()
-    print("faces acquired")
-    print(f"found {face_counter} faces")
-    input("press enter to continue")
+    answer = ask_get_faces()
+    
+    make_folders()
+    print("created folders")
+    
+    if answer:
+        clear_folders()
+        print("cleaned processed folders")
+        
+        get_faces()
+        print("faces acquired")
+        print(f"found {face_counter} faces")    
+        input("press enter to continue")
+        
+    else:
+        print("Skipping face extraction")
+        
     with open("log.txt", "w") as file:
         file.write(f"{face_counter} faces found\r\n")
-        compare_faces(file)
+        comparisons = compare_faces(file)
+        move_images_similar(comparisons, file)
     
 
 if __name__ == "__main__":
     try:
+        t1 = time_ns()
         main()
-        input("finished")
+        t2 = time_ns()
+        print("\r\nfinished")
+        print(f"Time taken: {(t2-t1)* (10**9)}s")
     except Exception as e:
         print(traceback.format_exc())
         print(e)
