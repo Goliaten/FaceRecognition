@@ -258,7 +258,7 @@ if __name__ == "__main__":
         main()
         t2 = time_ns()
         print("\r\nfinished")
-        print(f"Time taken: {(t2-t1)* (10**9)}s")
+        print(f"Time taken: {(t2-t1)/ (10**9)}s")
     except Exception as e:
         print(traceback.format_exc())
         print(e)
